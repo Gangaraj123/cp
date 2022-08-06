@@ -6,6 +6,13 @@ typedef pair<int, int> pii;
 typedef pair<ll, ll> pll;
 typedef tuple<int, int, int> tiii;
 
+// To include ordered set
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+using namespace __gnu_pbds;
+#define ordered_set tree<int, null_type, less, rb_tree_tag, tree_order_statistics_node_update>
+
+
 /*******************************************************************************/
 /********************************** STANDARD ALGORITMS *************************/
 /*******************************************************************************/
@@ -43,6 +50,72 @@ void Sieve(long long n)
     }
 }
 
+ll gcd(ll a, ll b)
+{
+    if (a == 0)
+        return b;
+    return gcd(b % a, a);
+}
+
+//  Extended Euclidean algorithm also finds the co-efficients
+//  x,y such that xa+yb=gcd(a,b);
+pll Egcd(ll a, ll b, ll &gcd)
+{
+    if (a == 0)
+    {
+        gcd = b;
+        return {0, 1};
+    }
+    pll t = Egcd(b % a, a, gcd);
+    return {t.second - t.first * (b / a), t.first};
+}
+// let a*x+b*y=gcd , then (b%a)*x1+a*y1=gcd => (b-floor(b/a)*a)*x1+a*y1=gcd
+// by equating, x=y1-floor(b/a)*x1 , y=x1
+
+// n inverse mod m = x such that xn+ym=1 (gcd will be 1 as m is prime)
+ll mod_inverse_euclidean(ll n, ll m)
+{
+    ll gcd = 0; // to get the gcd
+    return (Egcd(n % m, m, gcd).first + m) % m;
+}
+
+ll mod_inverse_iterative(ll n, ll m)
+{
+    ll m0 = m;
+    ll x = 0, y = 1; // co-effieceints in base-case of Egcd
+
+    if (m == 1)
+        return 0; // trivial
+
+    while (n > 1)
+    {
+        ll q = n / m;
+        ll t = m;
+
+        m = n % m, n = t;
+        t = x;
+        x = y - q * x;
+        y = t;
+    }
+    return (y + m0) % m0;
+}
+
+// works only when m is prime
+// Fermat's little theorem , a^(m-1)=1 (mod m)
+// so we need to find a^(m-2)
+ll mod_inverse_fermats(ll n, ll m)
+{
+    ll r=1;
+    ll p=m-2;
+    while(p)
+    {
+        if(p&1) r=(r*n)%m;
+        n=(n*n)%m;
+        p>>=1;
+    }
+    return r;
+}
+
 // prime factorisation of a number stored in map
 void PrimeFactorisation(ll n)
 {
@@ -66,24 +139,42 @@ void PrimeFactorisation(ll n)
         cout << i.first << " " << i.second << endl;
 }
 
-// implementation for upper_bound
-ll Upper_bound(ll n, ll val, Segment_Tree &st)
+// implementation of upper bound
+ll upper_bound(vector<ll> arr, ll x)
 {
-    ll low = 0ll, high = n - 1;
-    ll ans = 0;
+    ll n = arr.size();
+    ll low = 0, high = n - 1;
+    if (x >= arr[high])
+        return -1;
+    ll mid;
     while (low <= high)
     {
-        ll mid = (low + high) / 2;
-        ll curr = st.sum(0ll, 0ll, n - 1, 0ll, mid);
-        if (val >= curr)
-        {
-            ans = mid;
+        mid = (low + high) / 2;
+        if (arr[mid] <= x)
             low = mid + 1;
-        }
         else
             high = mid - 1;
     }
-    return ans + 1;
+    return arr[low];
+}
+
+// implementation of lower bound
+ll lower_bound(vector<ll> arr, ll x)
+{
+    ll n = arr.size();
+    ll low = 0, high = n - 1;
+    ll mid;
+    if (x > arr[high])
+        return -1;
+    while (low <= high)
+    {
+        mid = (low + high) / 2;
+        if (arr[mid] >= x)
+            high = mid - 1;
+        else
+            low = mid + 1;
+    }
+    return arr[high + 1];
 }
 
 // Rabin-Karp algorithm for pattern matching
@@ -115,6 +206,114 @@ vector<int> Rabin_Karp(string const &s, string const &t)
             occurences.push_back(i);
     }
     return occurences;
+}
+
+// KMP algorithm for pattern matching
+vector<int> computeLPSArray(string pat)
+{
+    vector<int> lps;
+    int m = pat.size();
+    lps[0] = 0;  // only proper prefixes are allowed
+    int len = 0; // length of lps
+    int i = 1;   // current index;
+    while (i < m)
+    {
+        // example "abababca" and i==5, len==3. The longest prefix suffix is "aba", when pat[i]==pat[len],
+        // we get new prefix "abab" and new suffix "abab", so increase length of  current lps by 1 and go to next iteration.
+        if (pat[i] == pat[len])
+        {
+            len++;
+            lps[i] = len;
+            i++;
+        }
+        else // (pat[i] != pat[len])
+        {
+            if (len != 0)
+            {
+                len = lps[len - 1];
+                // This is tricky. Consider the example "ababe......ababc", i is index of 'c', len==4. The longest prefix suffix is "abab",
+                // when pat[i]!=pat[len], we get new prefix "ababe" and suffix "ababc", which are not equal.
+                // This means we can't increment length of lps based on current lps "abab" with len==4. We may want to increment it based on
+                // the longest prefix suffix with length < len==4, which by definition is lps of "abab". So we set len to lps[len-1],
+                // which is 2, now the lps is "ab". Then check pat[i]==pat[len] again due to the while loop, which is also the reason
+                // why we do not increment i here. The iteration of i terminate until len==0 (didn't find lps ends with pat[i]) or found
+                // a lps ends with pat[i].
+            }
+            else // if (len == 0)
+            {    // there isn't any lps ends with pat[i], so set lps[i] = 0 and go to next iteration.
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+    return lps;
+}
+
+void KMPSearch(string pat, string text)
+{
+    int m = pat.length();
+    int n = text.length();
+    vector<int> lps = computeLPSArray(pat);
+    vector<int> indices;
+    int i = 0, j = 0;
+    while (i < n)
+    {
+        if (pat[j] == text[i])
+        {
+            j++;
+            i++; // if match, increse pointers
+        }
+        if (j == m)
+        {
+            // insert starting index in text
+            indices.push_back(i - j);
+            j = lps[j - 1];
+        }
+        else if (i < n and pat[j] != text[i]) // mismatch after jmatches
+        {
+            // but a suffix upto j-1 length is already matched,
+            // if there is a prefix equal to suffix, then no need to match it again
+            // Do not match pat[0....lps[j-1]] , they are already matched
+            if (j != 0)
+                j = lps[j - 1];
+            // if no character is matched before, then increase i
+            else
+                i++;
+        }
+    }
+}
+
+// a O(n) appraoch to find max 3 numbers
+// and min2 numbers , without using sorting
+int maximumProduct(vector<int> &nums)
+{
+    int min1 = INT_MAX, min2 = INT_MAX;
+    int max1, max2, max3;
+    max1 = max2 = max3 = INT_MIN;
+    for (int i : nums)
+    {
+        if (i <= min1)
+        {
+            min2 = min1;
+            min1 = i;
+        }
+        else if (i <= min2)
+            min2 = i;
+        if (i >= max1)
+        {
+            max3 = max2;
+            max2 = max1;
+            max1 = i;
+        }
+        else if (i >= max2)
+        {
+            max3 = max2;
+            max2 = i;
+        }
+        else if (i > max3)
+            max3 = i;
+    }
+    return max(max1 * min1 * min2, max1 * max2 * max3);
 }
 
 // Kadane's Algorithm for maximum(or minimum) sum subarray
@@ -220,6 +419,8 @@ void next_perm(vector<ll> &arr)
 
 {
     int i;
+    // LeetCode - Next Permutation solution
+
     for (i = arr.size() - 1; i > 0; i--)
     {
         if (arr[i - 1] < arr[i])
@@ -233,6 +434,47 @@ void next_perm(vector<ll> &arr)
         }
     }
     sort(arr.begin() + i, arr.end());
+}
+
+// returns the element that occurs more than n/2 times if there is any
+void MooresVotingAlog(vector<ll> arr)
+{
+    int n = arr.size();
+    int min_index = 0, count = 1;
+    for (int i = 1; i < n; i++)
+    {
+        if (arr[i] == arr[min_index])
+            count++;
+        else
+            count--;
+
+        // This happens when we found that number of elements equal to current element
+        // is same as number of elements that are not equal to current
+        // so we change our decision
+        if (count == 0)
+        {
+            min_index = i;
+            count = 1;
+        }
+    }
+    // return arr[min_index];
+}
+
+vector<long long> nextLargerElement(vector<long long> arr, int n)
+{
+    stack<long long> st;
+    vector<long long> ng(n);
+    for (int i = n - 1; i >= 0; i--)
+    {
+        while (!st.empty() and st.top() < arr[i])
+            st.pop();
+        if (st.empty())
+            ng[i] = -1;
+        else
+            ng[i] = st.top();
+        st.push(arr[i]);
+    }
+    return ng;
 }
 
 void counting_sort(int arr[], int n, int range)
@@ -250,6 +492,39 @@ void counting_sort(int arr[], int n, int range)
     }
     // temp is now sorted
 }
+
+void heapify(int arr[], int n, int i)
+{
+    // heapify elements in arr starting from  i to n
+    int largest = i;
+    int left = 2 * i + 1;
+    int right = 2 * i + 2;
+    if (left < n and arr[largest] < arr[left])
+        largest = left;
+    if (right < n and arr[largest] < arr[right])
+        largest = right;
+    if (largest != i)
+    {
+        swap(arr[i], arr[largest]);
+        heapify(arr, n, largest);
+    }
+}
+
+void heap_sort(int arr[], int n)
+{
+    // build heap
+    for (int i = n / 2 - 1; i >= 0; i--) // this covers all non-leaf nodes
+    {
+        heapify(arr, n, i);
+    }
+    for (int i = n - 1; i > 0; i--)
+    {
+        // move highest elment to ith position ans heapify upto i-1
+        swap(arr[0], arr[i]);
+        heapify(arr, i, 0);
+    }
+}
+
 /*****************************************************************************/
 /**************************** SPECIAL DATA STRUCTURES ************************/
 /*****************************************************************************/
@@ -314,6 +589,7 @@ public:
     }
 
     // build tree from array
+    // v is the node number for the range [tl,tr]
     void build(vector<ll> &arr, ll v, ll tl, ll tr)
     {
         if (tl == tr)
@@ -323,11 +599,12 @@ public:
             ll tm = (tl + tr) / 2;
             build(arr, 2 * v + 1, tl, tm);
             build(arr, 2 * v + 2, tm + 1, tr);
-            tree[v] = tree[2 * v + 1] + tree[2 * v + 2];
+            tree[v] = tree[2 * v + 1] + tree[2 * v + 2]; // for sum
         }
     }
 
     // get sum of l to r range
+    // tl-tr is range of node v and not the range of sum we check
     ll sum(ll v, ll tl, ll tr, ll l, ll r)
     {
         if (l > r)
@@ -374,23 +651,15 @@ public:
         lazy.resize(4 * n, 0);
     }
 
-    // update
-    // This is for addition update
     void push(ll v, ll tl, ll tr)
     {
         if (lazy[v] != 0)
         {
-            // update the current node
-            tree[v] += lazy[v] * (tr - tl + 1);
-            if (!(2 * v + 1 < 4 * tree_size and (2 * v + 2) < 4 * tree_size))
-            {
-                lazy[v] = 0;
-                return;
-            }
-
             // pass value to be added to children
             lazy[2 * v + 1] += lazy[v];
+            tree[2 * v + 1] += lazy[v] * ((tl + tr) / 2 - tl + 1);
             lazy[2 * v + 2] += lazy[v];
+            tree[2 * v + 2] += lazy[v] * (tr - (tl + tr) / 2);
             lazy[v] = 0;
         }
     }
@@ -409,41 +678,29 @@ public:
         }
     }
 
-    void print_tree(ll v, ll tl, ll tr)
+    // get sum of l to r range
+    // tl-tr is range of node v and not the range of sum we check
+    ll sum(ll v, ll tl, ll tr, ll l, ll r)
     {
+        if (l > r)
+            return 0ll;
+        if (l == tl && r == tr)
+        {
+            return tree[v];
+        }
         push(v, tl, tr);
-        if (tl == tr)
-        {
-            cout << "index " << tl << " : " << tree[v];
-            cout << endl;
-        }
-        else
-        {
-            ll tm = (tl + tr) / 2;
-            print_tree(2 * v + 1, tl, tm);
-            print_tree(2 * v + 2, tm + 1, tr);
-        }
-    }
-    void get(ll v, ll tl, ll tr, ll x, vector<ll> &ans)
-    {
-        push(v, tl, tr);
-        if (tl == tr)
-        {
-            ans.push_back(tree[v]);
-            return;
-        }
         ll tm = (tl + tr) / 2;
-        get(2 * v + 1, tl, tm, x, ans);
-        get(2 * v + 2, tm + 1, tr, x, ans);
+        return sum(v * 2 + 1, tl, tm, l, min(r, tm)) + sum(v * 2 + 2, tm + 1, tr, max(l, tm + 1), r);
     }
 
-    // update a position with new value
+    // update a range with new value
     void update(ll v, ll tl, ll tr, ll l, ll r, ll new_val)
     {
         if (l > r)
             return;
         if (l == tl && r == tr)
         {
+            tree[v] += new_val * (r - l + 1);
             lazy[v] += new_val;
         }
         else
@@ -452,6 +709,7 @@ public:
             ll tm = (tl + tr) / 2;
             update(v * 2 + 1, tl, tm, l, min(tm, r), new_val);
             update(v * 2 + 2, tm + 1, tr, max(tm + 1, l), r, new_val);
+            tree[v] = tree[2 * v + 1] + tree[2 * v + 2];
         }
     }
 };
@@ -515,7 +773,7 @@ public:
         STable.resize(N, vector<ll>(k + 1));
         for (ll i = 0; i < N; i++)
         {
-            STable[i][0] = arr[i];
+            STable[i][0] = arr[i];  // range for [i,i+2^j-1]
         }
         for (ll j = 1; j <= k; j++)
             for (ll i = 0; i + (1ll << j) <= N; i++)
@@ -548,6 +806,79 @@ public:
     }
 };
 
+class Trie
+{
+    struct Trie_Node
+    {
+        int next[26];
+        bool isEndOfWord = false;
+        Trie_Node()
+        {
+            fill(next, next + 26, -1);
+        }
+    };
+
+    vector<Trie_Node> trie;
+
+public:
+    void insert(string new_string)
+    {
+        if (trie.size() == 0)
+            trie.emplace_back();
+        int last = 0;
+        for (auto ch : new_string)
+        {
+            int c = ch - 'a';
+            if (trie[last].next[c] == -1)
+            {
+                trie[last].next[c] = trie.size();
+                trie.emplace_back();
+            }
+            last = trie[last].next[c];
+        }
+        trie[last].isEndOfWord = true;
+    }
+    bool search(string target)
+    {
+        if (trie.size() == 0)
+            return false;
+        int last = 0;
+        for (auto ch : target)
+        {
+            int c = ch - 'a';
+            if (trie[last].next[c] == -1)
+                return false;
+            last = trie[last].next[c];
+        }
+        return trie[last].isEndOfWord;
+    }
+};
+
+int partition(vector<int> &arr, int low, int high)
+{
+    // selecting pivot as the last element
+    int i = low - 1, pivot = arr[high];
+    for (int j = low; j < high; j++)
+    {
+        if (arr[j] < pivot)
+        {
+            i++;
+            swap(arr[i], arr[j]);
+        }
+    }
+    swap(arr[i + 1], arr[high]);
+    return i + 1; // it contains the pivot element
+}
+void quick_sort(vector<int> &arr, int low, int high)
+{
+    if (low < high)
+    {
+        int pi = partition(arr, low, high); // Find the partition
+        quick_sort(arr, low, pi - 1);       // sort left
+        quick_sort(arr, pi + 1, high);      // sort right
+    }
+}
+
 /*
     => Precomputation helps in some cases to obtain better performances.
     => Consecutive numbers are co-primes
@@ -562,6 +893,7 @@ public:
     => x=x&~x sets all one bits to 0 , expect the last one bit
     => if x&(x-1) =0, then x is a power of two
     => b=0; do {}while(b=(b-x)&x) willl process all subsets of x
+    => Handle subtractions while using modulo operations as (a-b+mod)%mod
 */
 
 /*****************************************************************************/
@@ -687,6 +1019,7 @@ int Dijkstra_min_path(int src, int dest, int n, vector<pair<int, int>> V[])
     // This is faster than set
     priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
     pq.push({0, src}); // insert src with distance 0
+    visited[0] = 1;
     while (!pq.empty())
     {
         // pick shortest vertext
@@ -695,7 +1028,6 @@ int Dijkstra_min_path(int src, int dest, int n, vector<pair<int, int>> V[])
         ll u = g.second, curr_dist = g.first;
         if (visited[u])
             continue; // if visited current node then continue
-        visited[u] = 1;
         distance[u] = curr_dist;
 
         for (int i = 0; i < V[u].size(); i++)
@@ -707,6 +1039,7 @@ int Dijkstra_min_path(int src, int dest, int n, vector<pair<int, int>> V[])
             if (visited[v] == 0)
             {
                 before[v] = u;
+                visited[v] = 1;
                 pq.push({curr_dist + w, v});
             }
         }
@@ -743,6 +1076,9 @@ void Floyd_Warshall_algo(int V, vector<vector<int>> &adj, vector<vector<int>> &d
     }
 }
 
+// From Cayley's formula, the number of trees possible
+// on n-labelled vertices in n^(n-2)
+
 void MST_prims(int V, vector<pair<int, int>> adj[])
 {
     vector<pair<int, int>> mst[V];
@@ -770,6 +1106,26 @@ void MST_prims(int V, vector<pair<int, int>> adj[])
             {
                 pq.push(make_tuple(i.second, v, i.first));
             }
+        }
+    }
+}
+
+// Kruskal's algorithm : using disjoint set union
+void kruskals(int V, vector<tiii> adj)
+{
+    // edge list representation
+    // edge = {weight,startvertex, endvertex}
+    sort(adj.begin(), adj.end());
+    Disjoint_set_Union dsu(V);
+    vector<tiii> result;
+    for (auto e : adj)
+    {
+        int u, v, w;
+        tie(w, u, v) = e;
+        if (dsu.root(u) != dsu.root(v))
+        {
+            result.push_back(e);
+            dsu.Union(u, v);
         }
     }
 }
@@ -843,33 +1199,52 @@ void KosarajuSAlgo(vector<int> adj[], int V)
     // TODO
 }
 
+// to use custom comparator
+// map<int,int> mp;
+// auto comp=[&mp](int n1,int n2){return mp[n1]>mp[n2];};
+// priority_queue<int,vector<int>,decltype(comp)> heap(comp);
 
 /***************************************************************************************/
 /**************************Dynamic Programming *****************************************/
 /***************************************************************************************/
 
-void knapsack(int W,int wt[],int val[],int n)
+void knapsack(int W, int wt[], int val[], int n)
 {
     // dp[i][w] = maximum value with a knapsack of weight w and considering 1st i items
     // dp[i][w]=max(dp[i-1][w],dp[i-1][w-wi]+val[i])
     // It is maximum when we pick current element, and when we won't pick current element
-    
-    int dp[2][W+1]; // we only need current and previous row
-    for(int i=0;i<=n;i++)
+
+    int dp[2][W + 1]; // we only need current and previous row
+    for (int i = 0; i <= n; i++)
     {
-        for(int w=0;w<=w;w++)
+        for (int w = 0; w <= w; w++)
         {
-            if(w==0||i==0)
-            dp[i%2][w]=0;
-            else 
+            if (w == 0 || i == 0)
+                dp[i % 2][w] = 0;
+            else
             {
-                if(wt[i]<=w)
+                if (wt[i] <= w)
                 {
-                    dp[i%2][w]=max(dp[(i-1)%2][w],dp[(i-1)%2][w-wt[i]]+val[i]);
+                    dp[i % 2][w] = max(dp[(i - 1) % 2][w], dp[(i - 1) % 2][w - wt[i]] + val[i]);
                 }
-                else dp[i%2][w]=dp[(i-1)%2][w];
+                else
+                    dp[i % 2][w] = dp[(i - 1) % 2][w];
             }
         }
     }
     // ans = dp[n%2][W]
 }
+
+
+// Some useful lines
+// Common memset settings
+//memset(memo, -1, sizeof memo); // initialize DP memoization table with -1
+//memset(arr, 0, sizeof arr); // to clear an array of integers
+// ans = a ? b : c; // to simplify: if (a) ans = b; else ans = c;
+// ans += val; // to simplify: ans = ans + val; and its variants
+// index = (index + 1) % n; // index++; if (index >= n) index = 0;
+// index = (index + n - 1) % n; // index--; if (index < 0) index = n - 1;
+// int ans = (int)((double)d + 0.5); // for rounding to nearest integer
+// ans = min(ans, new_computation); // min/max shortcut
+// alternative form but not used in this book: ans <?= new_computation;
+// some code use short circuit && (AND) and || (OR)
