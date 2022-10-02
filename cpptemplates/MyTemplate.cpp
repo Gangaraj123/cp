@@ -116,6 +116,114 @@ ll mod_inverse_fermats(ll n, ll m)
     return r;
 }
 
+// code for permuatations and 
+// combinations
+class PermsCombs
+{
+    int n;
+    vector<ll> fact;
+    vector<ll> invFact;
+
+public:
+    PermsCombs(int N)
+    {
+        n = N;
+        fact.resize(n + 1);
+        invFact.resize(n + 1);
+    }
+    ll mod_inverse_fermats(ll n, ll m)
+    {
+        ll r = 1;
+        ll p = m - 2;
+        while (p)
+        {
+            if (p & 1)
+                r = (r * n) % m;
+            n = (n * n) % m;
+            p >>= 1;
+        }
+        return r;
+    }
+    void calculateFacts()
+    {
+        fact[0] = 1;
+        for (int i = 1; i <= n; i++)
+            fact[i] = fact[i - 1] * i % mod;
+        invFact[n] =mod_inverse_fermats(fact[n],mod);
+        for(int i=n-1;i>=0;i--)
+        invFact[i]=(invFact[i+1]*(i+1))%mod;
+    }
+    ll ncr(ll n,ll r)
+    {
+        if(n<r) return 0;
+        if(r==0) return 1;
+        return ((fact[n]*invFact[r]%mod)*invFact[n-r]%mod);
+    }
+    ll npr(ll n,ll r)
+    {
+        if(n<r) return 0;
+        return (ncr(n,r)*fact[r])%mod;
+    }
+};
+
+class Str_Palindrom_helper
+{
+    vector<ll> hash;
+    vector<ll> revHash;
+    vector<ll> ppow;
+    ll p=13331;
+    public:
+    Str_Palindrom_helper(string s)
+    {
+        int n=s.size();
+        hash.resize(n+5);
+        revHash.resize(n+5);
+        ppow.resize(n+5);
+        hash[0]=revHash[n+1]=0;
+        for(int i=1;i<=n;i++)
+            hash[i]=(hash[i-1]*p+s[i-1])%mod;
+        for(int i=n;i>=1;i--)
+            revHash[i]=(revHash[i+1]*p+s[i-1])%mod;
+        ppow[0]=1;
+        for(int i=1;i<=n;i++)
+            ppow[i]=ppow[i-1]*p%mod;
+
+    }
+    
+    // returns true if substring of s
+    // from l to r is a palindrome
+    // use 1-indexed for l and r
+    bool is_substr_palin(int l,int r)
+    {
+        int len=(r-l+1)/2;
+        ll num1=(hash[l+len-1]-hash[l-1]*ppow[len]%mod+mod)%mod;
+        ll num2=(revHash[r-len+1]-revHash[r+1]*ppow[len]%mod+mod)%mod;
+        return num1==num2;
+    }
+};
+
+
+/*
+    => Number of ways k balls can be distribuited into 
+        n boxes = 
+        (k+n-1)Ck
+    => Number of ways k balls can be distribuited into 
+       n boxes such that each box must contain atleast 
+       on all 
+       = (k-1)C(n-1)
+
+    => Each box may contain atmost one ball and in addition no two
+     adjacent boxes may both contain a ball.
+       = (n-k+1) C (n-2K+1)
+
+    => nth Catalan number , Cn = summation(i=0 to n-1)Ci*C(n-i-1)
+       Also equal to Number of valid  parenthesis with n opening and n closing braces
+        Cn= (2n C n)/(n+1)
+    
+    => There are Cn binary trees of n nodes
+    => There are Cn-1 rooted trees of n nodes
+*/
+
 // prime factorisation of a number stored in map
 void PrimeFactorisation(ll n)
 {
@@ -1248,3 +1356,6 @@ void knapsack(int W, int wt[], int val[], int n)
 // ans = min(ans, new_computation); // min/max shortcut
 // alternative form but not used in this book: ans <?= new_computation;
 // some code use short circuit && (AND) and || (OR)
+// Using global variables is OK for competitive programming, but not for software programming
+
+// hypot(x,y) in c++ returns sqrt(x^2+y^2)
