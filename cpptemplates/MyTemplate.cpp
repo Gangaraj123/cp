@@ -12,7 +12,9 @@ typedef tuple<int, int, int> tiii;
 using namespace __gnu_pbds;
 #define ordered_set tree<int, null_type, less, rb_tree_tag, tree_order_statistics_node_update>
 
-
+// Goldbach's Conjecture:
+// Every even number other than 2 can be written as
+// a sum of two prime numbers
 /*******************************************************************************/
 /********************************** STANDARD ALGORITMS *************************/
 /*******************************************************************************/
@@ -31,6 +33,7 @@ int llnds(vector<int> &v)
     return lis.size();
     // use lower_bound for longest increasing subsequence
 }
+// reason - using upperbound, we will insert duplicates so it will be non-decreasing
 
 // seive of eratostanes
 void Sieve(long long n)
@@ -105,18 +108,19 @@ ll mod_inverse_iterative(ll n, ll m)
 // so we need to find a^(m-2)
 ll mod_inverse_fermats(ll n, ll m)
 {
-    ll r=1;
-    ll p=m-2;
-    while(p)
+    ll r = 1;
+    ll p = m - 2;
+    while (p)
     {
-        if(p&1) r=(r*n)%m;
-        n=(n*n)%m;
-        p>>=1;
+        if (p & 1)
+            r = (r * n) % m;
+        n = (n * n) % m;
+        p >>= 1;
     }
     return r;
 }
 
-// code for permuatations and 
+// code for permuatations and
 // combinations
 class PermsCombs
 {
@@ -149,20 +153,23 @@ public:
         fact[0] = 1;
         for (int i = 1; i <= n; i++)
             fact[i] = fact[i - 1] * i % mod;
-        invFact[n] =mod_inverse_fermats(fact[n],mod);
-        for(int i=n-1;i>=0;i--)
-        invFact[i]=(invFact[i+1]*(i+1))%mod;
+        invFact[n] = mod_inverse_fermats(fact[n], mod);
+        for (int i = n - 1; i >= 0; i--)
+            invFact[i] = (invFact[i + 1] * (i + 1)) % mod;
     }
-    ll ncr(ll n,ll r)
+    ll ncr(ll n, ll r)
     {
-        if(n<r) return 0;
-        if(r==0) return 1;
-        return ((fact[n]*invFact[r]%mod)*invFact[n-r]%mod);
+        if (n < r)
+            return 0;
+        if (r == 0)
+            return 1;
+        return ((fact[n] * invFact[r] % mod) * invFact[n - r] % mod);
     }
-    ll npr(ll n,ll r)
+    ll npr(ll n, ll r)
     {
-        if(n<r) return 0;
-        return (ncr(n,r)*fact[r])%mod;
+        if (n < r)
+            return 0;
+        return (ncr(n, r) * fact[r]) % mod;
     }
 };
 
@@ -171,45 +178,44 @@ class Str_Palindrom_helper
     vector<ll> hash;
     vector<ll> revHash;
     vector<ll> ppow;
-    ll p=13331;
-    public:
+    ll p = 13331;
+
+public:
     Str_Palindrom_helper(string s)
     {
-        int n=s.size();
-        hash.resize(n+5);
-        revHash.resize(n+5);
-        ppow.resize(n+5);
-        hash[0]=revHash[n+1]=0;
-        for(int i=1;i<=n;i++)
-            hash[i]=(hash[i-1]*p+s[i-1])%mod;
-        for(int i=n;i>=1;i--)
-            revHash[i]=(revHash[i+1]*p+s[i-1])%mod;
-        ppow[0]=1;
-        for(int i=1;i<=n;i++)
-            ppow[i]=ppow[i-1]*p%mod;
-
+        int n = s.size();
+        hash.resize(n + 5);
+        revHash.resize(n + 5);
+        ppow.resize(n + 5);
+        hash[0] = revHash[n + 1] = 0;
+        for (int i = 1; i <= n; i++)
+            hash[i] = (hash[i - 1] * p + s[i - 1]) % mod;
+        for (int i = n; i >= 1; i--)
+            revHash[i] = (revHash[i + 1] * p + s[i - 1]) % mod;
+        ppow[0] = 1;
+        for (int i = 1; i <= n; i++)
+            ppow[i] = ppow[i - 1] * p % mod;
     }
-    
+
     // returns true if substring of s
     // from l to r is a palindrome
     // use 1-indexed for l and r
-    bool is_substr_palin(int l,int r)
+    bool is_substr_palin(int l, int r)
     {
-        int len=(r-l+1)/2;
-        ll num1=(hash[l+len-1]-hash[l-1]*ppow[len]%mod+mod)%mod;
-        ll num2=(revHash[r-len+1]-revHash[r+1]*ppow[len]%mod+mod)%mod;
-        return num1==num2;
+        int len = (r - l + 1) / 2;
+        ll num1 = (hash[l + len - 1] - hash[l - 1] * ppow[len] % mod + mod) % mod;
+        ll num2 = (revHash[r - len + 1] - revHash[r + 1] * ppow[len] % mod + mod) % mod;
+        return num1 == num2;
     }
 };
 
-
 /*
-    => Number of ways k balls can be distribuited into 
-        n boxes = 
+    => Number of ways k balls can be distribuited into
+        n boxes =
         (k+n-1)Ck
-    => Number of ways k balls can be distribuited into 
-       n boxes such that each box must contain atleast 
-       on all 
+    => Number of ways k balls can be distribuited into
+       n boxes such that each box must contain atleast
+       on all
        = (k-1)C(n-1)
 
     => Each box may contain atmost one ball and in addition no two
@@ -219,7 +225,7 @@ class Str_Palindrom_helper
     => nth Catalan number , Cn = summation(i=0 to n-1)Ci*C(n-i-1)
        Also equal to Number of valid  parenthesis with n opening and n closing braces
         Cn= (2n C n)/(n+1)
-    
+
     => There are Cn binary trees of n nodes
     => There are Cn-1 rooted trees of n nodes
 */
@@ -277,10 +283,10 @@ ll lower_bound(vector<ll> arr, ll x)
     while (low <= high)
     {
         mid = (low + high) / 2;
-        if (arr[mid] >= x)
-            high = mid - 1;
-        else
+        if (arr[mid] < x)
             low = mid + 1;
+        else
+            high = mid - 1;
     }
     return arr[high + 1];
 }
@@ -524,7 +530,6 @@ ll binary_search_pivot(vector<ll> arr, ll key)
 }
 
 void next_perm(vector<ll> &arr)
-
 {
     int i;
     // LeetCode - Next Permutation solution
@@ -742,6 +747,22 @@ public:
             tree[v] = tree[v * 2 + 1] + tree[v * 2 + 2];
         }
     }
+
+    void print_tree(int v, int tl, int tr, int space)
+    {
+        space += 10;
+        if (tr > tl)
+        {
+            print_tree(2 * v + 1, (tl + tr) / 2 + 1, tr, space);
+        }
+        for (int i = 0; i < space; i++)
+            cout << " ";
+        cout << tree[v] << endl;
+        if (tr > tl)
+        {
+            print_tree(2 * v + 2, tl, (tl + tr) / 2, space);
+        }
+    }
 };
 
 class Lazy_Segment_Tree
@@ -881,7 +902,7 @@ public:
         STable.resize(N, vector<ll>(k + 1));
         for (ll i = 0; i < N; i++)
         {
-            STable[i][0] = arr[i];  // range for [i,i+2^j-1]
+            STable[i][0] = arr[i]; // range for [i,i+2^j-1]
         }
         for (ll j = 1; j <= k; j++)
             for (ll i = 0; i + (1ll << j) <= N; i++)
@@ -1101,11 +1122,11 @@ void bellman_ford(int V, int source, vector<int> &distances, vector<tuple<int, i
         {
             int a, b, c;
             tie(a, b, c) = edges[j];
-            if (distances[a] < INT_MAX)
+            if (distances[a] < INT_MAX and distances[a] + c < distances[b])
             {
                 updated = true;
                 parent[b] = a;
-                distances[b] = min(distances[b], distances[a] + c);
+                distances[b] = distances[a] + c;
             }
         }
         if (!updated)
@@ -1122,21 +1143,19 @@ int Dijkstra_min_path(int src, int dest, int n, vector<pair<int, int>> V[])
 {
     vector<int> distance(n);
     vector<int> before(n, -1);
-    vector<int> visited(n, 0);
     // priority queue for maintaing {distance to vertext,vertext} to get the closest vertex
     // This is faster than set
     priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+    distance[src] = 0;
     pq.push({0, src}); // insert src with distance 0
-    visited[0] = 1;
     while (!pq.empty())
     {
         // pick shortest vertext
         pair<int, int> g = pq.top();
         pq.pop();
         ll u = g.second, curr_dist = g.first;
-        if (visited[u])
-            continue; // if visited current node then continue
-        distance[u] = curr_dist;
+        if (distance[src] != curr_dist)
+            continue;
 
         for (int i = 0; i < V[u].size(); i++)
         {
@@ -1144,10 +1163,11 @@ int Dijkstra_min_path(int src, int dest, int n, vector<pair<int, int>> V[])
             ll v = V[u][i].first;
             ll w = V[u][i].second;
 
-            if (visited[v] == 0)
+            if (distance[u] < INT_MAX && distance[u] + w < distance[v])
             {
+
                 before[v] = u;
-                visited[v] = 1;
+                distance[v] = distance[u] + w;
                 pq.push({curr_dist + w, v});
             }
         }
@@ -1343,11 +1363,18 @@ void knapsack(int W, int wt[], int val[], int n)
     // ans = dp[n%2][W]
 }
 
+// to declare a priority queue with custom comparator
+bool customCompare(int a, int b)
+{
+    return a < b;
+}
+
+priority_queue<int, vector<int>, decltype(&customCompare)> pq;
 
 // Some useful lines
 // Common memset settings
-//memset(memo, -1, sizeof memo); // initialize DP memoization table with -1
-//memset(arr, 0, sizeof arr); // to clear an array of integers
+// memset(memo, -1, sizeof memo); // initialize DP memoization table with -1
+// memset(arr, 0, sizeof arr); // to clear an array of integers
 // ans = a ? b : c; // to simplify: if (a) ans = b; else ans = c;
 // ans += val; // to simplify: ans = ans + val; and its variants
 // index = (index + 1) % n; // index++; if (index >= n) index = 0;
